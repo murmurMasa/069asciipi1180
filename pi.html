@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>モンテカルロ法</title>
+<script>
+var canvas, context;                            //キャンバス
+var sNum, currNum, cnt;                         //サンプル数、処理数、円の中の点の数
+var timer;                                      //タイマー
+
+function init() {
+    //キャンバスの取得
+    canvas = document.getElementById("mc");     //キャンバスのID
+    context = canvas.getContext("2d");          //キャンバスの描画を有効にする
+
+    //初期描画
+    drawBase();
+
+    //STARTボタンの有効化、STOPボタンの無効化
+    document.getElementById("start").diabled = false;   //startボタンのID
+    document.getElementById("stop").diabled = true;     //stopボタンのID
+}
+
+function drawBase() {
+    //キャンバスのクリア
+    context.clearRect(0, 0, canvas.width, canvas.height);       //キャンバスの横幅、高さ
+    //半径200の円
+    drawCircle(200, 200, 200, "#CCCCCC", "#EEEEEE");            //塗りつぶしの色は薄いグレー、線の色はグレー
+}
+
+function drawCircle(x, y, r, color1, color2) {
+    //円の描画
+    context.strokeStyle = color1;                               //線の色を設定
+    context.fillStyle = color2;                                 //塗りつぶしの色を設定
+    context.beginPath();
+    context.arc(x, y, r, 0, 2*Math.PI);                         //円を描く
+    context.fill();
+    context.stroke();
+}
+
+function startSampling() {
+    //初期描画
+    drawBase();
+
+    //サンプル数の取得
+    sNum = document.getElementById("sNum").value;               //サンプル数入力エリアのID
+
+    if(sNum > 0) {
+        //サンプリング開始
+        cnt = 0;
+        currNum = 0;
+        timer = setInterval(sampling, 10);                      //10ミリ秒ごとにsampling()関数を実行
+
+        //STARTボタンの無効化、STOPボタンの有効化、サンプル数変更不可
+        document.getElementById("start").disabled = true;
+        document.getElementById("stop").disabled = false;
+        document.getElementById("sNum").disabled = true;
+    }
+}
+
+function stopSampling() {
+    //サンプリング停止
+    clearInterval(timer);
+
+    //startボタンの有効化、stopボタンの無効化、サンプル数変更可
+    document.getElementById("start").disabled = false;
+    document.getElementById("stop").disabled = true;
+    document.getElementById("sNum").disabled = false;    
+}
+
+function sampling() {
+    //一括処理数の取得
+    var pNum = document.getElementById("pNum").value;       //一括処理数入力エリアのID
+
+    //サンプリング
+    for (var i=0; i<pNum; i++) {
+        //点の生成
+        setPoint();
+
+        //進捗
+        currNum++;
+        document.getElementById("progress").value = currNum/sNum*100;   //進捗バーのID
+
+        //円周率の近似値、精度
+        var pi = cnt/currNum * 4;                                       //モンテカルロ法で円周率（近似値）を求める
+        var precision = (1 - Math.abs(Math.PI-pi)/Math.PI)*100;         //精度を求める
+        document.getElementById("pi").innerHTML = pi;                   //円周率表示エリアのID
+        document.getElementById("precision").innerHTML = precision;     //精度表示エリアのID
+
+        //サンプリング終了
+        if (currNum == sNum) {
+            stopSampling();
+            break;                          //forループを終了する
+        }
+    }
+}
+
+function setPoint() {
+    //点の座標(乱数）
+    var x = Math.random() * 400;            //0～399の乱数
+    var y = Math.random() * 400;
+
+    //中心からの距離
+    var d = Math.sqrt(Math.pow((x-200), 2)+Math.pow((y-200), 2));       //三平方の定理で距離を求める。sqrtはルート、powは累乗
+
+    //点の描画
+    if (d < 200) {                                                      //点が半径200の円の中にあるなら
+        //円の中
+        drawCircle(x, y, 4, "rgba(255, 0, 204, 0.5)", "rgba(255, 102, 204, 0.5");   //赤紫(#00CCFF)で半透明、ピンク(#FF66CC)で半透明
+        cnt++;
+    } else {
+        //円の外
+        drawCircle(x, y, 4, "rgba(0, 204, 255, 0.5)", "rgba(102, 204, 255, 0.5");   //水色#00CCFF)で半透明、薄い水色(#66CCFF)で半透明
+    }
+}
+</script>
+<style>
+canvas {border: solid thin #CCCCCC;}
+progress {width: 400px;}
+#sNum {width:80px;}
+#pNum {width:50px;}
+</style>
+</head>
+<body onload="init()">
+<p>モンテカルロ法</p>
+サンプル数：<input type="number" id="sNum" value="10000" step="10000">
+一括処理数：<input type="number" id="pNum" value="10" step="10">
+<input type="button" id="start" value="START" onclick="startSampling()">
+<input type="button" id="stop" value="STOP" onclick="stopSampling()">
+<hr>
+円周率：<span id="pi"></span><br>
+精度[%]:<span id="precision"></span><br>
+<progress id="progress" value="0" max="100"></progress><br>
+<canvas id="mc" width="400" height="400"></canvas>
+</body>
+</html>
